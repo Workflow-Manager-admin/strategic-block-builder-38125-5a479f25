@@ -1,9 +1,10 @@
+//
+// Strategic Block Builder (Restored Drag-and-Drop Version)
+// Main game logic and UI. Block shape placement is managed through drag-and-drop, not click-to-select.
+//
+//
+
 /* global setTimeout */
-// 
-// Strategic Block Builder (Refactored for Click-to-Select & Click-to-Place)
-// Main game logic and UI. No drag-and-drop; blocks are selected by click and placed by clicking the grid.
-//
-//
 
 /**
  * Block color palette (colorful, bold for dark theme)
@@ -30,9 +31,12 @@ const CELL_EMPTY = 0;
 type Cell = number;
 type Grid = Cell[][];
 type Position = { x: number; y: number };
-type Shape = number[][]; // 2D block shape (eg. 1/0 matrix)
+type Shape = number[][];
 type SelectionBlock = { shape: Shape; color: string; id: string };
 
+/**
+ * Utility - return a random element from array.
+ */
 function randomElement<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -43,20 +47,16 @@ function shapes(): Shape[] {
     [[1]],
     [[1,1]],
     [[1],[1]],
-
     [[1,1,1]],
     [[1],[1],[1]],
     [[1,1],[1,0]],
     [[1,1],[0,1]],
     [[1,1],[1,1]],
-
     [[1,1,1],[0,1,0]],
     [[1,0],[1,0],[1,1]],
     [[0,1],[0,1],[1,1]],
-
     [[1,1,1,1]],
     [[1],[1],[1],[1]],
-
     [[1,1,1],[1,0,0],[1,0,0]],
     [[1,1,1],[0,0,1],[0,0,1]],
   ];
@@ -68,7 +68,7 @@ function shapes(): Shape[] {
 function randomBlockShape(): SelectionBlock {
   const color = randomElement(BLOCK_COLORS);
   const shapeMat = JSON.parse(JSON.stringify(randomElement(shapes())));
-  const id = Math.random().toString(36).substr(2, 8) + Date.now();
+  const id = Math.random().toString(36).substr(2,8) + Date.now();
   return { shape: shapeMat, color, id };
 }
 
@@ -160,9 +160,10 @@ function renderGrid(
   grid: Grid,
   cellColorsMap: Map<number, string>,
   cellSize = 34,
-  cellClickHandler: ((x: number, y: number) => void) | null = null,
+  onCellDrop?: (x: number, y: number, draggingBlockIdx: number | null) => void,
   validOverlay: boolean[][] | null = null,
-  invalidOverlay: boolean[][] | null = null
+  invalidOverlay: boolean[][] | null = null,
+  onCellDragOver?: (x: number, y: number, draggingBlockIdx: number | null) => void
 ): HTMLDivElement {
   const board = document.createElement("div");
   board.className = "sbb-grid";
@@ -197,19 +198,48 @@ function renderGrid(
       } else {
         box.style.outline = "none";
       }
-      if (cellClickHandler) {
-        box.style.cursor = "pointer";
-        box.setAttribute("data-x", x.toString());
-        box.setAttribute("data-y", y.toString());
-        box.onclick = (e) => {
-          e.preventDefault();
-          cellClickHandler(x, y);
+      box.setAttribute("data-x", x.toString());
+      box.setAttribute("data-y", y.toString());
+
+      // Drag-over and drop event listeners
+      if (onCellDrop) {
+        box.ondragover = (ev: DragEvent) => {
+          ev.preventDefault();
+          const draggingIdx = globalDraggingBlockIdx;
+          if (onCellDragOver) onCellDragOver(x, y, draggingIdx);
+          box.style.background = "#241c44";
+        };
+        box.ondragleave = (ev: DragEvent) => {
+          ev.preventDefault();
+          box.style.background =
+            grid[y][x] !== CELL_EMPTY
+              ? (cellColorsMap.get(grid[y][x]) as string)
+              : "#20194c";
+        };
+        box.ondrop = (ev: DragEvent) => {
+          ev.preventDefault();
+          box.style.background =
+            grid[y][x] !== CELL_EMPTY
+              ? (cellColorsMap.get(grid[y][x]) as string)
+              : "#20194c";
+          const draggedIdxString = ev.dataTransfer?.getData("blockIdx") || "";
+          const draggingBlockIdx = draggedIdxString === "" ? null : parseInt(draggedIdxString); // preserve old behavior
+          onCellDrop(x, y, draggingBlockIdx);
         };
       }
       board.appendChild(box);
     }
   }
   return board;
+}
+
+/**
+ * Track which block is currently being dragged globally (so we can highlight as needed).
+ */
+let globalDraggingBlockIdx: number | null = null;
+
+function setDraggingBlockIdx(idx: number | null) {
+  globalDraggingBlockIdx = idx;
 }
 
 /**
@@ -291,13 +321,12 @@ function renderGameOverBar(score: number, onRestartClick: () => void): HTMLDivEl
 }
 
 /**
- * UI Helper to render the block selection row (with click-to-select logic)
+ * Block selection area (Drag-and-drop)
  */
 function renderBlockSelectionArea(
   selection: SelectionBlock[],
   used: Set<string>,
-  selectedIdx: number | null,
-  onSelect: (() => void)
+  onDragStartHandlers: ((e: DragEvent, idx: number) => void)[]
 ): HTMLDivElement {
   const wrap = document.createElement("div");
   wrap.style.display = "flex";
@@ -314,24 +343,23 @@ function renderBlockSelectionArea(
     blockWrap.style.userSelect = "none";
     blockWrap.style.padding = "3px";
     blockWrap.style.borderRadius = "11px";
-    if (!isUsed && selectedIdx === idx) {
-      blockWrap.style.boxShadow = `0 0 0 3.5px ${ACCENT_COLOR}`;
-      blockWrap.style.background = "#240527";
-    } else {
-      blockWrap.style.boxShadow = "";
-      blockWrap.style.background = "";
+    blockWrap.style.cursor = isUsed ? "default" : "grab";
+
+    // Set up drag events for enabled blocks
+    if (!isUsed) {
+      blockWrap.setAttribute("draggable", "true");
+      blockWrap.ondragstart = (e: DragEvent) => onDragStartHandlers[idx](e);
+      blockWrap.ondragend = () => {
+        setDraggingBlockIdx(null);
+      };
     }
-    blockWrap.style.cursor = isUsed ? "default" : "pointer";
-    blockWrap.onclick = () => {
-      if (!isUsed) onSelect();
-    };
     const blockDiv = renderBlock(
       block.shape,
       block.color,
       34,
       true,
       null,
-      selectedIdx === idx,
+      false,
       isUsed
     );
     blockWrap.appendChild(blockDiv);
@@ -341,7 +369,7 @@ function renderBlockSelectionArea(
 }
 
 /**
- * Strategic Block Builder - Main Container (Click-to-select/place)
+ * Strategic Block Builder - Main Container (Drag-and-drop enabled)
  */
 class StrategicBlockBuilder {
   container: HTMLElement;
@@ -351,8 +379,7 @@ class StrategicBlockBuilder {
   selectionUsed: Set<string>;
   score: number;
   blockIdSeed: number;
-  selectedBlockIdx: number | null;
-  placePreview: { pos: Position; valid: boolean; previewGrid: boolean[][] } | null;
+  placePreview: { pos: Position; valid: boolean; previewGrid: boolean[][], blockIdx: number } | null;
   gameOver: boolean;
 
   constructor(root: HTMLElement) {
@@ -363,7 +390,6 @@ class StrategicBlockBuilder {
     this.selectionUsed = new Set();
     this.score = 0;
     this.blockIdSeed = 2;
-    this.selectedBlockIdx = null;
     this.placePreview = null;
     this.gameOver = false;
     this.mount();
@@ -376,16 +402,10 @@ class StrategicBlockBuilder {
     this.selectionUsed.clear();
     this.score = 0;
     this.blockIdSeed = 2;
-    this.selectedBlockIdx = null;
     this.placePreview = null;
     this.gameOver = false;
     this.mount();
   }
-
-  handleSelectBlock = () => {
-    // This function will be hooked up per block inline, with correct blockIdx context.
-    // No-op here, no unused variable warning.
-  };
 
   mount() {
     while (this.container.firstChild) this.container.removeChild(this.container.firstChild);
@@ -412,22 +432,23 @@ class StrategicBlockBuilder {
     let validOverlay: boolean[][] | null = null;
     let invalidOverlay: boolean[][] | null = null;
 
-    if (this.selectedBlockIdx !== null && this.placePreview && this.placePreview.previewGrid) {
+    if (this.placePreview && this.placePreview.previewGrid != null) {
       if (this.placePreview.valid) validOverlay = this.placePreview.previewGrid;
       else invalidOverlay = this.placePreview.previewGrid;
     }
 
+    // The main grid with drop logic
     const gridDiv = renderGrid(
       this.grid,
       this.cellColorsMap,
       34,
-      (x, y) => {
-        if (this.selectedBlockIdx === null) return;
+      (x, y, draggingBlockIdx) => {
         if (this.gameOver) return;
-
-        const block = this.selection[this.selectedBlockIdx];
+        if (draggingBlockIdx === null) return;
+        const block = this.selection[draggingBlockIdx];
         if (!block || this.selectionUsed.has(block.id)) return;
 
+        // Try to place the block shape at x,y
         if (canPlaceBlock(this.grid, block.shape, { x, y })) {
           // Place shape
           const sh = block.shape.length, sw = block.shape[0].length;
@@ -443,7 +464,7 @@ class StrategicBlockBuilder {
           this.cellColorsMap.set(this.blockIdSeed, block.color);
           this.blockIdSeed++;
           this.selectionUsed.add(block.id);
-          // Score for placement (1 point per tile placed)
+          // Score for block placement
           let tilesPlaced = 0;
           for (let by = 0; by < sh; by++)
             for (let bx = 0; bx < sw; bx++)
@@ -463,18 +484,18 @@ class StrategicBlockBuilder {
             }
             if (full) fullCols.push(x2);
           }
-
           for (const y2 of fullRows) for (let x2 = 0; x2 < GRID_SIZE; x2++) this.grid[y2][x2] = CELL_EMPTY;
           for (const x2 of fullCols) for (let y2 = 0; y2 < GRID_SIZE; y2++) this.grid[y2][x2] = CELL_EMPTY;
-          // Score bonus: 10 per line
+          // Score bonus for clearing
           this.score += (fullRows.length + fullCols.length) * 10;
 
+          // If all used, generate new selection
           if (this.selectionUsed.size >= SELECTION_COUNT) {
             this.selection = Array.from({ length: SELECTION_COUNT }, randomBlockShape);
             this.selectionUsed.clear();
           }
 
-          // Check for available placement
+          // Check for available block placement - if none game over
           let hasPlacement = false;
           for (const b of this.selection.filter((b2) => !this.selectionUsed.has(b2.id))) {
             const [sh2, sw2] = [b.shape.length, b.shape[0].length];
@@ -490,8 +511,6 @@ class StrategicBlockBuilder {
             if (hasPlacement) break;
           }
           if (!hasPlacement) this.gameOver = true;
-
-          this.selectedBlockIdx = null;
           this.placePreview = null;
         } else {
           // Show temporary invalid feedback
@@ -510,56 +529,41 @@ class StrategicBlockBuilder {
               }
             }
           }
-          this.placePreview = { pos: { x, y }, valid: false, previewGrid: gridOverlay };
+          this.placePreview = { pos: { x, y }, valid: false, previewGrid: gridOverlay, blockIdx: draggingBlockIdx };
           setTimeout(() => { this.placePreview = null; this.mount(); }, 350);
         }
         this.mount();
       },
       validOverlay,
-      invalidOverlay
-    );
+      invalidOverlay,
+      (x, y, draggingBlockIdx) => {
+        // For hover preview
+        if (this.gameOver) return;
+        if (draggingBlockIdx === null) return;
+        const block = this.selection[draggingBlockIdx];
+        if (!block || this.selectionUsed.has(block.id)) return;
 
-    if (this.selectedBlockIdx !== null && !this.gameOver) {
-      const block = this.selection[this.selectedBlockIdx];
-      let mouseOnCell = false;
-      Array.from(gridDiv.children).forEach(cellNode => {
-        const cellDiv = cellNode as HTMLElement;
-        const xStr = cellDiv.getAttribute("data-x");
-        const yStr = cellDiv.getAttribute("data-y");
-        if (xStr == null || yStr == null) return;
-        const x = parseInt(xStr), y = parseInt(yStr);
-        cellDiv.onmouseenter = () => {
-          mouseOnCell = true;
-          const [sh, sw] = [block.shape.length, block.shape[0].length];
-          let gridOverlay: boolean[][] = Array.from({ length: GRID_SIZE }, () =>
-            Array(GRID_SIZE).fill(false)
-          );
-          let valid = canPlaceBlock(this.grid, block.shape, { x, y });
-          for (let by = 0; by < sh; by++) {
-            for (let bx = 0; bx < sw; bx++) {
-              if (
-                block.shape[by][bx] &&
-                y + by >= 0 && y + by < GRID_SIZE &&
-                x + bx >= 0 && x + bx < GRID_SIZE
-              ) {
-                gridOverlay[y + by][x + bx] = true;
-              }
+        // Build preview grid
+        const sh = block.shape.length, sw = block.shape[0].length;
+        let gridOverlay: boolean[][] = Array.from({ length: GRID_SIZE }, () =>
+          Array(GRID_SIZE).fill(false)
+        );
+        let valid = canPlaceBlock(this.grid, block.shape, { x, y });
+        for (let by = 0; by < sh; by++) {
+          for (let bx = 0; bx < sw; bx++) {
+            if (
+              block.shape[by][bx] &&
+              y + by >= 0 && y + by < GRID_SIZE &&
+              x + bx >= 0 && x + bx < GRID_SIZE
+            ) {
+              gridOverlay[y + by][x + bx] = true;
             }
           }
-          this.placePreview = { pos: { x, y }, valid, previewGrid: gridOverlay };
-          this.mount();
-        };
-        cellDiv.onmouseleave = () => {
-          mouseOnCell = false;
-          setTimeout(() => {
-            if (!mouseOnCell) {
-              this.placePreview = null;
-              this.mount();
-            }
-          }, 10);
-        };
-      });
-    }
+        }
+        this.placePreview = { pos: { x, y }, valid, previewGrid: gridOverlay, blockIdx: draggingBlockIdx };
+        this.mount();
+      }
+    );
 
     boardWrap.appendChild(gridDiv);
 
@@ -571,55 +575,26 @@ class StrategicBlockBuilder {
 
     this.container.appendChild(boardWrap);
 
-    // update block selection to provide correct handler with correct blockIdx, NO unused param warning
-    const selectionDiv = document.createElement("div");
-    selectionDiv.style.display = "flex";
-    selectionDiv.style.justifyContent = "center";
-    selectionDiv.style.gap = "36px";
-    selectionDiv.style.margin = "44px 0 1.8em 0";
-    this.selection.forEach((block, idx) => {
-      const blockWrap = document.createElement("div");
-      blockWrap.className = "sbb-selection-block";
-      const isUsed = this.selectionUsed.has(block.id);
-      blockWrap.style.opacity = isUsed ? "0.24" : "1";
-      blockWrap.style.pointerEvents = isUsed ? "none" : "auto";
-      blockWrap.style.transition = "opacity 0.2s";
-      blockWrap.style.userSelect = "none";
-      blockWrap.style.padding = "3px";
-      blockWrap.style.borderRadius = "11px";
-      if (!isUsed && this.selectedBlockIdx === idx) {
-        blockWrap.style.boxShadow = `0 0 0 3.5px ${ACCENT_COLOR}`;
-        blockWrap.style.background = "#240527";
-      } else {
-        blockWrap.style.boxShadow = "";
-        blockWrap.style.background = "";
-      }
-      blockWrap.style.cursor = isUsed ? "default" : "pointer";
-      blockWrap.onclick = () => {
-        if (!isUsed) {
-          if (this.selectedBlockIdx === idx) {
-            this.selectedBlockIdx = null;
-            this.placePreview = null;
-          } else {
-            this.selectedBlockIdx = idx;
-            this.placePreview = null;
-          }
-          this.mount();
+    // drag start event handlers, to pass relevant block idx (avoid closure allocation in loop)
+    const onDragStartHandlers: ((e: DragEvent, idx: number) => void)[] = [];
+    for (let idx = 0; idx < SELECTION_COUNT; idx++) {
+      onDragStartHandlers.push((e: DragEvent) => {
+        if (this.selectionUsed.has(this.selection[idx].id)) return;
+        setDraggingBlockIdx(idx);
+        // Store blockIdx on the dataTransfer, needed for drop
+        if (e && e.dataTransfer) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("blockIdx", String(idx));
         }
-      };
-      const blockDiv = renderBlock(
-        block.shape,
-        block.color,
-        34,
-        true,
-        null,
-        this.selectedBlockIdx === idx,
-        isUsed
-      );
-      blockWrap.appendChild(blockDiv);
-      selectionDiv.appendChild(blockWrap);
-    });
+      });
+    }
 
+    // Block selection row with drag-and-drop enabled
+    const selectionDiv = renderBlockSelectionArea(
+      this.selection,
+      this.selectionUsed,
+      onDragStartHandlers
+    );
     this.container.appendChild(selectionDiv);
 
     const footer = document.createElement("div");
@@ -628,13 +603,14 @@ class StrategicBlockBuilder {
     footer.style.fontSize = "1.01rem";
     footer.style.fontWeight = "400";
     footer.innerHTML =
-      "Click a block to select, then click a cell to place it. <span style='color:" +
+      "Drag a block to the grid. <span style='color:" +
       ACCENT_COLOR +
       "'>Clear lines!</span>";
     this.container.appendChild(footer);
   }
 }
 
+// PUBLIC_INTERFACE
 export function mountStrategicBlockBuilder(selector: string) {
   const root = document.querySelector(selector) as HTMLElement;
   if (root) new StrategicBlockBuilder(root);
