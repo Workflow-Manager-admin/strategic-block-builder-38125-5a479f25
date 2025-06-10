@@ -372,6 +372,19 @@ function renderBlockSelectionArea(
     blockWrap.style.pointerEvents = used.has(block.id) ? "none" : "auto";
     blockWrap.style.transition = "opacity 0.2s";
     blockWrap.style.userSelect = "none";
+
+    // This inner wrapper enables direct drag events registration
+    const dragDivWrapper = document.createElement("div");
+    dragDivWrapper.style.display = "inline-block";
+    dragDivWrapper.draggable = !used.has(block.id);
+    dragDivWrapper.style.cursor = used.has(block.id) ? "default" : "grab";
+    dragDivWrapper.ondragstart = (ev) => {
+      if (!used.has(block.id)) dragHandlers.dragstart(ev, idx);
+    };
+    dragDivWrapper.ondragend = (ev) => {
+      if (!used.has(block.id)) dragHandlers.dragend(ev, idx);
+    };
+
     const dragDiv = renderBlock(
       block.shape,
       block.color,
@@ -379,10 +392,8 @@ function renderBlockSelectionArea(
       true,
       draggingIdx === idx ? ACCENT_COLOR : null
     );
-    dragDiv.draggable = !used.has(block.id); // disable drag for used blocks
-    dragDiv.ondragstart = ev => dragHandlers.dragstart(ev, idx);
-    dragDiv.ondragend = ev => dragHandlers.dragend(ev, idx);
-    blockWrap.appendChild(dragDiv);
+    dragDivWrapper.appendChild(dragDiv);
+    blockWrap.appendChild(dragDivWrapper);
     wrap.appendChild(blockWrap);
   });
   return wrap;
@@ -454,7 +465,19 @@ class StrategicBlockBuilder {
   hookGridDrop(boardDiv: HTMLDivElement) {
     // Allow drop
     boardDiv.ondragover = (ev) => {
-      if (this.gameOver || this.draggingIdx === null) return;
+      // For better UX, always show as "move" and allow drop when draggingIdx is valid
+      const dt = ev.dataTransfer;
+      if (dt) dt.dropEffect = "move";
+      let draggingIdx: number | null = this.draggingIdx;
+
+      // Sometimes draggingIdx may be null if browser lost state—try to recover from dataTransfer
+      if (draggingIdx === null && dt?.types.includes("application/x-sbb-block-idx")) {
+        try {
+          const data = JSON.parse(dt.getData("application/x-sbb-block-idx"));
+          if (typeof data.blockIdx === "number") draggingIdx = data.blockIdx;
+        } catch { /* ignore */ }
+      }
+      if (this.gameOver || draggingIdx === null) return;
       ev.preventDefault();
       const rect = (ev.target as HTMLElement).getBoundingClientRect();
       const gs = rect.width / GRID_SIZE;
@@ -462,7 +485,7 @@ class StrategicBlockBuilder {
       const mouseX = ev.clientX - rect.left;
       const mouseY = ev.clientY - rect.top;
       // Guess top-left placement (align to block's corner)
-      const block = this.selection[this.draggingIdx];
+      const block = this.selection[draggingIdx];
       const shape = block.shape;
       const sh = shape.length;
       const sw = shape[0].length;
@@ -501,11 +524,21 @@ class StrategicBlockBuilder {
       }
     };
     boardDiv.ondrop = (ev) => {
-      if (this.gameOver || this.draggingIdx === null) return;
+      // Allow recovering dragged block index from dataTransfer for consistent interop
+      let draggingIdx: number | null = this.draggingIdx;
+      const dt = ev.dataTransfer;
+      if (draggingIdx === null && dt?.types.includes("application/x-sbb-block-idx")) {
+        try {
+          const data = JSON.parse(dt.getData("application/x-sbb-block-idx"));
+          if (typeof data.blockIdx === "number") draggingIdx = data.blockIdx;
+        } catch { /* ignore */ }
+      }
+      if (this.gameOver || draggingIdx === null) return;
       ev.preventDefault();
+      if (dt) dt.dropEffect = "move";
       const rect = (ev.target as HTMLElement).getBoundingClientRect();
       const gs = rect.width / GRID_SIZE;
-      const block = this.selection[this.draggingIdx];
+      const block = this.selection[draggingIdx];
       const shape = block.shape;
       const sh = shape.length;
       const sw = shape[0].length;
