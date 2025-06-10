@@ -3,15 +3,7 @@
 > vite dev --host 0.0.0.0 --port 3000
 
 
-  VITE v6.2.5  ready in 198 ms
+  VITE v6.2.5  ready in 209 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://172.17.0.2:3000/
-11:51:17 PM [vite] (client) page reload src/StrategicBlockBuilder.ts
-11:51:31 PM [vite] (client) page reload src/StrategicBlockBuilder.ts
-11:53:31 PM [vite] (client) page reload src/StrategicBlockBuilder.ts
-11:54:17 PM [vite] (client) page reload src/StrategicBlockBuilder.ts
-11:55:16 PM [vite] (client) page reload src/StrategicBlockBuilder.ts
-11:55:29 PM [vite] (client) page reload src/StrategicBlockBuilder.ts
-11:55:38 PM [vite] (client) page reload src/StrategicBlockBuilder.ts
-11:55:51 PM [vite] (client) page reload src/StrategicBlockBuilder.ts

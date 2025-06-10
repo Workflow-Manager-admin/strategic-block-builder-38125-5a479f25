@@ -1,29 +1,21 @@
 //
-// Strategic Block Builder (Restored Drag-and-Drop Version)
+// Strategic Block Builder (Classic Drag-and-Drop Version)
 // Main game logic and UI. Block shape placement is managed through drag-and-drop, not click-to-select.
 //
 
 /* global setTimeout */
 
-/**
- * Canonical color palette: Each unique shape gets a fixed color.
- */
-const SHAPE_COLOR_PALETTE = [
-  "#f5246d", // 0: Single block
-  "#00c2ff", // 1: Horizontal 2
-  "#ffe156", // 2: Vertical 2
-  "#62e403", // 3: Horizontal 3
-  "#ff6f32", // 4: Vertical 3
-  "#19e68c", // 5: L (left)
-  "#956ff9", // 6: L (right)
-  "#f9ed69", // 7: Square
-  "#ffa36c", // 8: "T"
-  "#65d6ff", // 9: Tall L (left)
-  "#d57bee", //10: Tall L (right)
-  "#e09d1f", //11: Horizontal 4
-  "#1671e3", //12: Vertical 4
-  "#39e694", //13: Fat L left
-  "#ff59a6"  //14: Fat L right
+const BLOCK_COLORS = [
+  "#f5246d",  // pink
+  "#00c2ff",  // blue
+  "#ffe156",  // yellow
+  "#62e403",  // green
+  "#ff6f32",  // orange
+  "#19e68c",  // teal
+  "#956ff9",  // purple
+  "#f9ed69",  // light yellow
+  "#ffa36c",  // peach
+  "#d57bee"   // violet
 ];
 const GRID_SIZE = 9;
 const SELECTION_COUNT = 3;
@@ -36,55 +28,38 @@ type Cell = number;
 type Grid = Cell[][];
 type Position = { x: number; y: number };
 type Shape = number[][];
-type SelectionBlock = { shape: Shape; shapeIndex: number; color: string; id: string };
+type SelectionBlock = { shape: Shape; color: string; id: string };
 
 /**
- * Returns all block shapes (canonical order: indices 0..14).
+ * Returns all block shapes, randomizes order.
  */
-function shapes(): Shape[] {
+function blockShapes(): Shape[] {
   return [
-    [[1]],
-    [[1,1]],
-    [[1],[1]],
-    [[1,1,1]],
-    [[1],[1],[1]],
-    [[1,1],[1,0]],
-    [[1,1],[0,1]],
-    [[1,1],[1,1]],
-    [[1,1,1],[0,1,0]],
-    [[1,0],[1,0],[1,1]],
-    [[0,1],[0,1],[1,1]],
-    [[1,1,1,1]],
-    [[1],[1],[1],[1]],
-    [[1,1,1],[1,0,0],[1,0,0]],
-    [[1,1,1],[0,0,1],[0,0,1]],
+    [[1]], // single
+    [[1, 1]], // horizontal 2
+    [[1], [1]], // vertical 2
+    [[1, 1, 1]], // horizontal 3
+    [[1], [1], [1]], // vertical 3
+    [[1, 1], [1, 0]], // L
+    [[1, 1], [0, 1]], // reverse L
+    [[1, 1], [1, 1]], // square
+    [[1, 1, 1], [0, 1, 0]], // T
+    [[1, 0], [1, 0], [1, 1]] // tall L
   ];
 }
 
-/**
- * Returns a random block shape, assigning its canonical index and color.
- */
 function randomBlockShape(): SelectionBlock {
-  const shapeList = shapes();
-  const shapeIndex = Math.floor(Math.random() * shapeList.length);
-  const shapeMat = JSON.parse(JSON.stringify(shapeList[shapeIndex]));
-  const color = SHAPE_COLOR_PALETTE[shapeIndex];
-  const id = Math.random().toString(36).substr(2,8) + Date.now();
-  return { shape: shapeMat, color, shapeIndex, id };
+  const shapes = blockShapes();
+  const shape = JSON.parse(JSON.stringify(shapes[Math.floor(Math.random() * shapes.length)]));
+  const color = BLOCK_COLORS[Math.floor(Math.random() * BLOCK_COLORS.length)];
+  const id = Math.random().toString(36).substr(2, 8) + Date.now();
+  return { shape, color, id };
 }
 
-/**
- * Generates a fresh grid (all empty)
- */
 function makeEmptyGrid(): Grid {
-  return Array.from({ length: GRID_SIZE }, () =>
-    Array(GRID_SIZE).fill(CELL_EMPTY)
-  );
+  return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(CELL_EMPTY));
 }
 
-/**
- * Checks if a given shape can fit the grid at pos (top-left)
- */
 function canPlaceBlock(grid: Grid, shape: Shape, pos: Position): boolean {
   const [sh, sw] = [shape.length, shape[0].length];
   for (let y = 0; y < sh; y++) {
@@ -105,9 +80,6 @@ function canPlaceBlock(grid: Grid, shape: Shape, pos: Position): boolean {
   return true;
 }
 
-/**
- * UI Helper: Generate block html to render in selection area or grid preview
- */
 function renderBlock(
   shape: Shape,
   color: string,
@@ -154,13 +126,9 @@ function renderBlock(
   return blockDiv;
 }
 
-/**
- * UI Helper: Create a 9x9 grid as DOM for game area.
- * Always uses the stored shapeIndex for grid color assignment.
- */
 function renderGrid(
   grid: Grid,
-  cellColorsMap: Map<number, { color: string; shapeIndex: number }>,
+  cellColorsMap: Map<number, { color: string }>,
   cellSize = 34,
   onCellDrop?: (x: number, y: number, draggingBlockIdx: number | null) => void,
   validOverlay: boolean[][] | null = null,
@@ -186,12 +154,11 @@ function renderGrid(
       box.style.width = box.style.height = cellSize + "px";
       box.style.borderRadius = "7px";
 
-      // Color according to shape type in cellColorsMap
       let bgColor = "#20194c";
       if (grid[y][x] !== CELL_EMPTY) {
         const mapping = cellColorsMap.get(grid[y][x]);
-        if (mapping && typeof mapping.shapeIndex === "number") {
-          bgColor = SHAPE_COLOR_PALETTE[mapping.shapeIndex] || mapping.color;
+        if (mapping) {
+          bgColor = mapping.color;
         }
       }
 
@@ -210,7 +177,7 @@ function renderGrid(
       if (onCellDrop) {
         box.ondragover = (ev: DragEvent) => {
           ev.preventDefault();
-          if (onCellDragOver) onCellDragOver();
+          if (onCellDragOver) onCellDragOver(x, y, globalDraggingBlockIdx);
           box.style.background = "#241c44";
         };
         box.ondragleave = (ev: DragEvent) => {
@@ -220,7 +187,7 @@ function renderGrid(
         box.ondrop = (ev: DragEvent) => {
           ev.preventDefault();
           box.style.background = bgColor;
-          if (onCellDrop) onCellDrop();
+          if (onCellDrop) onCellDrop(x, y, globalDraggingBlockIdx);
         };
       }
       board.appendChild(box);
@@ -228,19 +195,15 @@ function renderGrid(
   }
   return board;
 }
+  }
+  return board;
+}
 
-/**
- * Track which block is currently being dragged globally (so we can highlight as needed).
- */
 let globalDraggingBlockIdx: number | null = null;
-
 function setDraggingBlockIdx(idx: number | null) {
   globalDraggingBlockIdx = idx;
 }
 
-/**
- * UI Helper for top bar: Score + Restart
- */
 function renderTopBar(score: number, onRestartClick: () => void): HTMLDivElement {
   const bar = document.createElement("div");
   bar.style.display = "flex";
@@ -278,9 +241,6 @@ function renderTopBar(score: number, onRestartClick: () => void): HTMLDivElement
   return bar;
 }
 
-/**
- * UI Helper for "game over"
- */
 function renderGameOverBar(score: number, onRestartClick: () => void): HTMLDivElement {
   const div = document.createElement("div");
   div.style.position = "absolute";
@@ -309,16 +269,12 @@ function renderGameOverBar(score: number, onRestartClick: () => void): HTMLDivEl
   restartBtn.style.borderRadius = "8px";
   restartBtn.style.cursor = "pointer";
   restartBtn.style.marginTop = "0.8em";
-
   restartBtn.onclick = onRestartClick;
   div.appendChild(document.createElement("br"));
   div.appendChild(restartBtn);
   return div;
 }
 
-/**
- * Block selection area (Drag-and-drop)
- */
 function renderBlockSelectionArea(
   selection: SelectionBlock[],
   used: Set<string>,
@@ -341,7 +297,6 @@ function renderBlockSelectionArea(
     blockWrap.style.borderRadius = "11px";
     blockWrap.style.cursor = isUsed ? "default" : "grab";
 
-    // Set up drag events for enabled blocks
     if (!isUsed) {
       blockWrap.setAttribute("draggable", "true");
       blockWrap.ondragstart = () => onDragStartHandlers[idx]();
@@ -364,13 +319,10 @@ function renderBlockSelectionArea(
   return wrap;
 }
 
-/**
- * Strategic Block Builder - Main Container (Drag-and-drop enabled)
- */
 class StrategicBlockBuilder {
   container: HTMLElement;
   grid: Grid;
-  cellColorsMap: Map<number, { color: string; shapeIndex: number }>;
+  cellColorsMap: Map<number, { color: string }>;
   selection: SelectionBlock[];
   selectionUsed: Set<string>;
   score: number;
@@ -443,10 +395,7 @@ class StrategicBlockBuilder {
         if (draggingBlockIdx === null) return;
         const block = this.selection[draggingBlockIdx];
         if (!block || this.selectionUsed.has(block.id)) return;
-
-        // Try to place the block shape at x,y
         if (canPlaceBlock(this.grid, block.shape, { x, y })) {
-          // Place shape
           const sh = block.shape.length, sw = block.shape[0].length;
           for (let by = 0; by < sh; by++) {
             for (let bx = 0; bx < sw; bx++) {
@@ -457,18 +406,17 @@ class StrategicBlockBuilder {
               }
             }
           }
-          // Assign color & shapeIndex for this blockId
-          this.cellColorsMap.set(this.blockIdSeed, { color: block.color, shapeIndex: block.shapeIndex });
+          this.cellColorsMap.set(this.blockIdSeed, { color: block.color });
           this.blockIdSeed++;
           this.selectionUsed.add(block.id);
-          // Score for block placement
+          // score for placement
           let tilesPlaced = 0;
           for (let by = 0; by < sh; by++)
             for (let bx = 0; bx < sw; bx++)
               if (block.shape[by][bx] === 1) tilesPlaced++;
           this.score += tilesPlaced;
 
-          // Line clearing
+          // clear lines
           const fullRows: number[] = [];
           const fullCols: number[] = [];
           for (let y2 = 0; y2 < GRID_SIZE; y2++) {
@@ -483,16 +431,14 @@ class StrategicBlockBuilder {
           }
           for (const y2 of fullRows) for (let x2 = 0; x2 < GRID_SIZE; x2++) this.grid[y2][x2] = CELL_EMPTY;
           for (const x2 of fullCols) for (let y2 = 0; y2 < GRID_SIZE; y2++) this.grid[y2][x2] = CELL_EMPTY;
-          // Score bonus for clearing
           this.score += (fullRows.length + fullCols.length) * 10;
 
-          // If all used, generate new selection
           if (this.selectionUsed.size >= SELECTION_COUNT) {
             this.selection = Array.from({ length: SELECTION_COUNT }, randomBlockShape);
             this.selectionUsed.clear();
           }
 
-          // Check for available block placement - if none game over
+          // game over
           let hasPlacement = false;
           for (const b of this.selection.filter((b2) => !this.selectionUsed.has(b2.id))) {
             const [sh2, sw2] = [b.shape.length, b.shape[0].length];
@@ -510,7 +456,7 @@ class StrategicBlockBuilder {
           if (!hasPlacement) this.gameOver = true;
           this.placePreview = null;
         } else {
-          // Show temporary invalid feedback
+          // feedback for invalid drop
           const sh = block.shape.length, sw = block.shape[0].length;
           let gridOverlay: boolean[][] = Array.from({ length: GRID_SIZE }, () =>
             Array(GRID_SIZE).fill(false)
@@ -538,7 +484,6 @@ class StrategicBlockBuilder {
         if (draggingBlockIdx === null) return;
         const block = this.selection[draggingBlockIdx];
         if (!block || this.selectionUsed.has(block.id)) return;
-        // Build preview grid
         const sh = block.shape.length, sw = block.shape[0].length;
         let gridOverlay: boolean[][] = Array.from({ length: GRID_SIZE }, () =>
           Array(GRID_SIZE).fill(false)
@@ -570,7 +515,6 @@ class StrategicBlockBuilder {
 
     this.container.appendChild(boardWrap);
 
-    // drag start event handlers, to pass relevant block idx (avoid closure allocation in loop)
     const onDragStartHandlers: (() => void)[] = [];
     for (let idx = 0; idx < SELECTION_COUNT; idx++) {
       onDragStartHandlers.push(() => {
@@ -579,7 +523,6 @@ class StrategicBlockBuilder {
       });
     }
 
-    // Block selection row with drag-and-drop enabled
     const selectionDiv = renderBlockSelectionArea(
       this.selection,
       this.selectionUsed,
@@ -593,9 +536,8 @@ class StrategicBlockBuilder {
     footer.style.fontSize = "1.01rem";
     footer.style.fontWeight = "400";
     footer.innerHTML =
-      "Drag a block to the grid. <span style='color:" +
-      ACCENT_COLOR +
-      "'>Clear lines!</span>";
+      "Drag a block to the grid. <span style='" +
+      "color:" + ACCENT_COLOR + "'>Clear lines!</span>";
     this.container.appendChild(footer);
   }
 }
