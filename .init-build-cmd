@@ -1,0 +1,4 @@
+{
+    "command": "npm install && npm run build",
+    "working_directory": "/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder"
+}

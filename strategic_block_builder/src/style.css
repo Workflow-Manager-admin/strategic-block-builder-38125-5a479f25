@@ -1,0 +1,97 @@
+:root {
+  --primary: #4100a3;
+  --secondary: #FFFFFF;
+  --accent: #f5246d;
+  --gridcell: #20194c;
+  --gridsel: #241c44;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  background: #190731 !important;
+  color: var(--secondary);
+  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+#app {
+  min-height: 100vh;
+  min-width: 100vw;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #190731;
+  box-sizing: border-box;
+}
+
+/* Game grid and cells */
+.sbb-grid {
+  user-select: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  margin: 0 auto;
+  background: #1d1140;
+  /* box-shadow in js */
+}
+.sbb-grid-cell {
+  box-sizing: border-box;
+  background: var(--gridcell);
+  border-radius: 7px;
+  transition: outline 0.07s, background 0.07s;
+  position: relative;
+}
+
+/* Block selection row */
+.sbb-selection-block {
+  transition: opacity 0.18s;
+  box-sizing: border-box;
+  padding: 2px;
+}
+
+.sbb-selection-block:active {
+  outline: 2.7px solid var(--accent);
+}
+
+/* Custom scrollbars for selection blox if needed */
+::-webkit-scrollbar {
+  width: 8px;
+  background: #290a4c;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a10a9;
+  border-radius: 8px;
+}
+
+button {
+  border-radius: 8px;
+  border: none;
+  font-size: 1em;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+button:focus,
+button:focus-visible {
+  outline: 3px auto var(--accent);
+}
+
+/* Responsive for mobile */
+@media (max-width: 700px) {
+  #app {
+    max-width: 98vw;
+  }
+  .sbb-grid {
+    width: 98vw !important;
+    height: 98vw !important;
+    min-width: 270px !important;
+    min-height: 270px !important;
+  }
+}
+

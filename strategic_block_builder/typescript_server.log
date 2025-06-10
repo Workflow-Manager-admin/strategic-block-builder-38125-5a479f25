@@ -1,0 +1,106 @@
+
+> typescript@0.0.0 dev
+> vite dev --host 0.0.0.0 --port 3000
+
+
+  VITE v6.2.5  ready in 202 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://172.17.0.2:3000/
+11:30:54 PM [vite] (client) page reload src/main.ts
+11:30:54 PM [vite] (client) Pre-transform error: Transform failed with 1 error:
+/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63: ERROR: Expected ")" but found ";"
+  Plugin: vite:esbuild
+  File: /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63
+  
+  Expected ")" but found ";"
+  514|        const mouseY = ev.clientY - rect.top;
+  515|        const cellX = Math.floor(mouseX / gs) - Math.floor(sw / 2);
+  516|        const cellY = Math.floor(mouseY / gs) - Math.floor(sh / 2;
+     |                                                                 ^
+  517|        );
+  518|        if (canPlaceBlock(this.grid, shape, { x: cellX, y: cellY })) {
+  
+11:30:54 PM [vite] Internal server error: Transform failed with 1 error:
+/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63: ERROR: Expected ")" but found ";"
+  Plugin: vite:esbuild
+  File: /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63
+  
+  Expected ")" but found ";"
+  514|        const mouseY = ev.clientY - rect.top;
+  515|        const cellX = Math.floor(mouseX / gs) - Math.floor(sw / 2);
+  516|        const cellY = Math.floor(mouseY / gs) - Math.floor(sh / 2;
+     |                                                                 ^
+  517|        );
+  518|        if (canPlaceBlock(this.grid, shape, { x: cellX, y: cellY })) {
+  
+      at failureErrorWithLog (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:1477:15)
+      at /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:756:50
+      at responseCallbacks.<computed> (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:623:9)
+      at handleIncomingPacket (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:678:12)
+      at Socket.readFromStdout (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:601:7)
+      at Socket.emit (node:events:517:28)
+      at addChunk (node:internal/streams/readable:368:12)
+      at readableAddChunk (node:internal/streams/readable:341:9)
+      at Readable.push (node:internal/streams/readable:278:10)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:190:23)
+11:30:54 PM [vite] Internal server error: Transform failed with 1 error:
+/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63: ERROR: Expected ")" but found ";"
+  Plugin: vite:esbuild
+  File: /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63
+  
+  Expected ")" but found ";"
+  514|        const mouseY = ev.clientY - rect.top;
+  515|        const cellX = Math.floor(mouseX / gs) - Math.floor(sw / 2);
+  516|        const cellY = Math.floor(mouseY / gs) - Math.floor(sh / 2;
+     |                                                                 ^
+  517|        );
+  518|        if (canPlaceBlock(this.grid, shape, { x: cellX, y: cellY })) {
+  
+      at failureErrorWithLog (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:1477:15)
+      at /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:756:50
+      at responseCallbacks.<computed> (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:623:9)
+      at handleIncomingPacket (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:678:12)
+      at Socket.readFromStdout (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:601:7)
+      at Socket.emit (node:events:517:28)
+      at addChunk (node:internal/streams/readable:368:12)
+      at readableAddChunk (node:internal/streams/readable:341:9)
+      at Readable.push (node:internal/streams/readable:278:10)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:190:23)
+11:31:03 PM [vite] (client) hmr update /src/style.css
+11:31:03 PM [vite] (client) Pre-transform error: Transform failed with 1 error:
+/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63: ERROR: Expected ")" but found ";"
+  Plugin: vite:esbuild
+  File: /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63
+  
+  Expected ")" but found ";"
+  514|        const mouseY = ev.clientY - rect.top;
+  515|        const cellX = Math.floor(mouseX / gs) - Math.floor(sw / 2);
+  516|        const cellY = Math.floor(mouseY / gs) - Math.floor(sh / 2;
+     |                                                                 ^
+  517|        );
+  518|        if (canPlaceBlock(this.grid, shape, { x: cellX, y: cellY })) {
+  
+11:31:04 PM [vite] Internal server error: Transform failed with 1 error:
+/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63: ERROR: Expected ")" but found ";"
+  Plugin: vite:esbuild
+  File: /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/src/StrategicBlockBuilder.ts:516:63
+  
+  Expected ")" but found ";"
+  514|        const mouseY = ev.clientY - rect.top;
+  515|        const cellX = Math.floor(mouseX / gs) - Math.floor(sw / 2);
+  516|        const cellY = Math.floor(mouseY / gs) - Math.floor(sh / 2;
+     |                                                                 ^
+  517|        );
+  518|        if (canPlaceBlock(this.grid, shape, { x: cellX, y: cellY })) {
+  
+      at failureErrorWithLog (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:1477:15)
+      at /home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:756:50
+      at responseCallbacks.<computed> (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:623:9)
+      at handleIncomingPacket (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:678:12)
+      at Socket.readFromStdout (/home/kavia/workspace/code-generation/strategic-block-builder-38125-5a479f25/strategic_block_builder/node_modules/esbuild/lib/main.js:601:7)
+      at Socket.emit (node:events:517:28)
+      at addChunk (node:internal/streams/readable:368:12)
+      at readableAddChunk (node:internal/streams/readable:341:9)
+      at Readable.push (node:internal/streams/readable:278:10)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:190:23)
